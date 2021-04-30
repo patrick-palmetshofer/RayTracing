@@ -35,6 +35,20 @@ class BezierCurve:
     def isQuadratic(self):
         return len(self.controlPoints) == 3
 
+    def _t(self, y):
+        Y = [p[1] for p in self.controlPoints]
+        if self.isLinear:
+            t = (y - Y[0]) / (Y[1] - Y[0])
+        elif self.isQuadratic:
+            s = math.sqrt(-Y[0]*Y[2] + Y[0]*y + Y[1]**2 - 2*Y[1]*y + Y[2]*y)
+            if Y[0] <= Y[1] <= Y[2]:
+                t = (s + Y[0] - Y[1]) / (Y[0] - 2*Y[1] + Y[2])
+            else:
+                t = (-s + Y[0] - Y[1]) / (Y[0] - 2*Y[1] + Y[2])
+        else:
+            raise NotImplementedError("Cannot compute 't' point for high-order (n>2) Bezier curves.")
+        return t
+
     def _evalBezier(self, t, controlPoints=None) -> tuple:
         """ Static and recursive method to evaluate a bezier curve of any order.
         https://en.wikipedia.org/wiki/B%C3%A9zier_curve#Recursive_definition
