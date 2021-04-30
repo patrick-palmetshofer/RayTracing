@@ -35,6 +35,20 @@ class BezierCurve:
     def isQuadratic(self):
         return len(self.controlPoints) == 3
 
+    def _evalBezier(self, t, controlPoints=None) -> tuple:
+        """ Static and recursive method to evaluate a bezier curve of any order.
+        https://en.wikipedia.org/wiki/B%C3%A9zier_curve#Recursive_definition
+        """
+        assert 0 <= t <= 1
+        if controlPoints is None:
+            controlPoints = self.controlPoints
+
+        if len(controlPoints) == 1:
+            result, = controlPoints
+            return result
+        lines = zip(controlPoints[:-1], controlPoints[1:])
+        return self._evalBezier(t, controlPoints=[(1 - t) * p1 + t * p2 for p1, p2 in lines])
+
 
 class Component:
     """ The base class for all graphic components. Defined from bezier curves. """
