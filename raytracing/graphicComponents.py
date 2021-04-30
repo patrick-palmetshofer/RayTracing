@@ -190,9 +190,9 @@ class Rectangle(Component):
 
 
 class Surface(Component):
-    def __init__(self, surface, halfHeight, x=0.0, color='k'):
+    def __init__(self, interface, halfHeight, x=0.0, color='k'):
         super(Surface, self).__init__(color=color, fill=False)
-        self.surface = surface
+        self.interface = interface
         self.halfHeight = halfHeight
         self.x = x
 
@@ -201,10 +201,10 @@ class Surface(Component):
         h = self.halfHeight
         v1 = self.x
 
-        if self.surface.R == float("+inf"):
+        if self.interface.R == float("+inf"):
             return [BezierCurve([(v1, -h), (v1, h)])]
 
-        R1 = self.surface.R
+        R1 = self.interface.R
         phi1 = math.asin(h / abs(R1))
         delta1 = R1 * (1.0 - math.cos(phi1))
         ctl1 = abs((1.0 - math.cos(phi1)) / math.sin(phi1) * R1)
@@ -215,60 +215,60 @@ class Surface(Component):
 
 
 class SurfacePair(Component):
-    def __init__(self, surfaceA, surfaceB, halfHeight, x=0.0):
-        colorValue = 1.0 - np.min([(surfaceA.n - 1) ** 2 / 2, 0.5])
+    def __init__(self, interfaceA, interfaceB, halfHeight, x=0.0):
+        colorValue = 1.0 - np.min([(interfaceA.n - 1) ** 2 / 2, 0.5])
         color = (colorValue - 0.1, colorValue, 0.95)
         super(SurfacePair, self).__init__(color=color)
 
-        self.surfaceA = surfaceA
-        self.surfaceB = surfaceB
+        self.interfaceA = interfaceA
+        self.interfaceB = interfaceB
         self.halfHeight = halfHeight
         self.x = x
         self.corners = None
 
-        self.pathSurfaceA = self.getPathA()
-        self.pathSurfaceB = self.getPathB()
+        self.pathInterfaceA = self.getPathA()
+        self.pathInterfaceB = self.getPathB()
 
     @property
     def bezierCurves(self) -> List[BezierCurve]:
         bezierCurves = []
-        bezierCurves.extend(self.pathSurfaceA)
-        bezierCurves.extend(self.pathSurfaceB)
+        bezierCurves.extend(self.pathInterfaceA)
+        bezierCurves.extend(self.pathInterfaceB)
         return bezierCurves
 
     def getPathA(self) -> List[BezierCurve]:
         h = self.halfHeight
         v1 = self.x
 
-        if type(self.surfaceA).__name__ == 'ConicalInterface':
-            a = self.surfaceA.alpha
+        if type(self.interfaceA).__name__ == 'ConicalInterface':
+            a = self.interfaceA.alpha
             corner = v1 - np.tan(a) * h
             self.corners = [corner]
             return [BezierCurve([(corner, -h), (v1, 0)]), BezierCurve([(v1, 0), (corner, h)])]
 
-        if self.surfaceA.R == float("+inf"):
+        if self.interfaceA.R == float("+inf"):
             self.corners = [v1]
             return [BezierCurve([(v1, -h), (v1, h)])]
 
-        R1 = self.surfaceA.R
+        R1 = self.interfaceA.R
         phi1 = math.asin(h / abs(R1))
         delta1 = R1 * (1.0 - math.cos(phi1))
         ctl1 = abs((1.0 - math.cos(phi1)) / math.sin(phi1) * R1)
         corner1 = v1 + delta1
 
         self.corners = [corner1]
-        if self.surfaceA.L == 0:  # realistic thin lens exception
-            self.surfaceA.L = delta1 * 2
+        if self.interfaceA.L == 0:  # realistic thin lens exception
+            self.interfaceA.L = delta1 * 2
 
         return [BezierCurve([(corner1, -h), (v1, -ctl1), (v1, 0)]),
                 BezierCurve([(v1, 0), (v1, ctl1), (corner1, h)])]
 
     def getPathB(self) -> List[BezierCurve]:
         h = self.halfHeight
-        v2 = self.x + self.surfaceA.L
+        v2 = self.x + self.interfaceA.L
 
-        if type(self.surfaceB).__name__ == 'ConicalInterface':
-            a = self.surfaceB.alpha
+        if type(self.interfaceB).__name__ == 'ConicalInterface':
+            a = self.interfaceB.alpha
             delta = np.tan(a) * h
             corner2 = v2 + delta
             self.corners.append(corner2)
@@ -277,13 +277,13 @@ class SurfacePair(Component):
                     BezierCurve([(v2, 0), (corner2, -h)]),
                     BezierCurve([(corner2, -h), (self.corners[0], -h)])]
 
-        if self.surfaceB.R == float("+inf"):
+        if self.interfaceB.R == float("+inf"):
             self.corners.append(v2)
             return [BezierCurve([(self.corners[0], h), (v2, h)]),
                     BezierCurve([(v2, h), (v2, -h)]),
                     BezierCurve([(v2, -h), (self.corners[0], -h)])]
 
-        R2 = self.surfaceB.R
+        R2 = self.interfaceB.R
         phi2 = math.asin(h / abs(R2))
         delta2 = R2 * (1.0 - math.cos(phi2))
         ctl2 = abs((1.0 - math.cos(phi2)) / math.sin(phi2) * R2)
