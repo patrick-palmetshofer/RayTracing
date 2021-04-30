@@ -23,8 +23,8 @@ class BezierCurve:
         self.controlPoints = controlPoints
 
     @property
-    def xy(self):
-        """The (x, y) coordinates of the end points of the curve. """
+    def endPoints(self):
+        """ The (x, y) coordinates of both end points of the curve. """
         return self.controlPoints[0], self.controlPoints[-1]
 
     @property
@@ -62,7 +62,7 @@ class Component:
         """ The (x, y) coordinates of the component. """
         xy = []
         for bezierCurve in self.bezierCurves:
-            xy.extend(bezierCurve.xy)
+            xy.extend(bezierCurve.endPoints)
         xy = list(set(xy))  # remove duplicates
         return xy
 
