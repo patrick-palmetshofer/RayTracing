@@ -61,7 +61,7 @@ class BezierCurve:
             result, = controlPoints
             return result
         lines = zip(controlPoints[:-1], controlPoints[1:])
-        return self._evalBezier(t, controlPoints=[(1 - t) * p1 + t * p2 for p1, p2 in lines])
+        return self._evalBezier(t, controlPoints=[((1 - t)*p1[0] + t*p2[0], (1 - t)*p1[1] + t*p2[1]) for p1, p2 in lines])
 
 
 class Component:
