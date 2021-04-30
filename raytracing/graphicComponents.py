@@ -35,6 +35,25 @@ class BezierCurve:
     def isQuadratic(self):
         return len(self.controlPoints) == 3
 
+    @property
+    def isFunctionOfY(self):
+        """ Special case for quadratic (or linear) bezier curves with a middle control point in-between
+        endpoints (in y-axis). We know there's only one possible solution for y. """
+        if self.isLinear:
+            return True
+        elif self.isQuadratic:
+            Y = [p[1] for p in self.controlPoints]
+            return (Y[0] <= Y[1] <= Y[2]) or (Y[0] >= Y[1] >= Y[2])
+        else:
+            raise NotImplementedError("Cannot determine if higher-order Bezier curves are a function of y.")
+
+    def eval(self, y):
+        """ When the curve is a function of y, we can evaluate it. This is the case for all optical surfaces. """
+        assert self.isFunctionOfY
+        t = self._t(y)
+        x, y = self._evalBezier(t)
+        return x
+
     def _t(self, y):
         Y = [p[1] for p in self.controlPoints]
         if self.isLinear:
