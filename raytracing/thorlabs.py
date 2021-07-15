@@ -1,6 +1,35 @@
 from .specialtylenses import *
 from .materials import *
 
+class ACA254_060_A(AirSpacedAchromatDoubletLens):
+    """ ACA254-060-A
+
+    .. csv-table::
+        :header: Parameter, value
+
+        "f", "60.0"
+        "R1", "39.43"
+        "R2", "-39.43"
+        "R3", "-35.34"
+        "R4", "-97.49"
+        "tc1", "6.83"
+        "tc2", "3.16"
+        "AirGap", "1.16"
+        "n1", "0.5876"
+        "n2", "0.5876"
+        "diameter", "25.4"
+        "Design Wavelengths", "486.1 nm, 587.6 nm, and 656.3 nm"
+        "Operating Temperature", "-40 °C to 85 °C"
+
+    Notes
+    -----
+    More info: https://www.thorlabs.com/newgrouppage9.cfm?objectgroup_id=6083
+    """    
+    def __init__(self, wavelength=None):
+        super(ACN254_100_A,self).__init__(f=60.0, R1=39.43, R2=-39.43, R3=-35.34, R4=-97.49,
+                                    tc1=6.83, tc2=3.16, AirGap=1.16, n1=None, mat1=N_SSK2, n2=None, mat2=N-SF57, diameter=25.4,
+                                    url='https://www.thorlabs.com/newgrouppage9.cfm?objectgroup_id=6083',
+                                    label="ACA254-060-A", wavelength=wavelength, wavelengthRef=0.5876)
 
 class ACN254_100_A(AchromatDoubletLens):
     """ ACN254-100-A
