@@ -93,6 +93,140 @@ class CompoundLens(MatrixGroup):
     def all(cls):
         return allSubclasses(cls)
 
+class AirSpacedAchromatDoubletLens(CompoundLens):
+    """ 
+    General Achromat doublet lens with an effective focal length of fa, back focal
+    length of fb.  The values fa and fb are used to validate the final focal lengths
+    and back focal lengths that are obtained from the combination of elements.
+    Most manufacturer's specifiy 1% tolerance, so if fa is more than 1% different
+    from the final focal length, a warning is raised.
+
+    Parameters
+    ----------
+    fa : float
+        The focal length
+    R1 : float
+        The first radius
+    R2 : float
+        The second radius
+    R3 : float
+        The third radius
+    R4 : float
+        The fourth radius
+    tc1 : float
+        The first center thickness
+    tc2 : float
+        The second center thickness
+    AirGap : float
+        The air gap between lenses
+    L  : float
+        Edge Length
+    WD : float
+        Working distance
+    n1 : float
+        The refraction index of the first material
+    n2 : float
+        The refractive index of the second material
+    diameter : float
+        The diameter of the lens
+    mat1 : object of Matrix class
+        The transfer matrix of the first lens
+    mat2 : object of Matrix class
+        The transfer matrix of the second lens
+    wavelengthRef : float
+        The defined wavelength
+    url : string
+        A link to find more info for the lens
+    label : string
+        The name of the lens
+
+    Notes
+    -----
+    Nomenclature from Thorlabs:
+    https://www.thorlabs.com/newgrouppage9.cfm?objectgroup_id=120 
+
+    With Edmund optics, the sign of the various radii can change depending on
+    some of the components (i.e. PN_85_877 for instance)
+
+    """
+
+    def __init__(self, f, R1, R2, R3, R4, tc1, tc2, airGap, L, WD, diameter, n1=None, n2=None, mat1=None, mat2=None, wavelengthRef=None,
+                 url=None, label='', wavelength=None):
+        self.f = f
+        self.R1 = R1
+        self.R2 = R2
+        self.R3 = R3
+        self.R4 = R4
+        self.tc1 = tc1
+        self.tc2 = tc2
+        self.airGap = airGap
+        self.L = L
+        self.WD = WD
+        self.n1 = n1
+        self.n2 = n2
+        self.mat1 = mat1
+        self.mat2 = mat2
+
+        if self.mat1 is not None and self.mat2 is not None :
+            if wavelength is not None:
+                self.n1=self.mat1.n(wavelength)
+                self.n2=self.mat2.n(wavelength)
+            elif wavelengthRef is not None:
+                self.n1=self.mat1.n(wavelengthRef)
+                self.n2=self.mat2.n(wavelengthRef)
+
+        if self.n1 is None or self.n2 is None:
+            raise ValueError("n1 or n2 not set")
+
+        elements = []
+        elements.append(DielectricInterface(n1=1, n2=self.n1, R=R1, diameter=diameter))
+        elements.append(Space(d=tc1, n=self.n1))
+        elements.append(DielectricInterface(n1=self.n1, n2=1, R=R2, diameter=diameter))
+        elements.append(Space(d=airGap, n=1))
+        elements.append(DielectricInterface(n1=1, n2=self.n2, R=R3, diameter=diameter))
+        elements.append(Space(d=tc2, n=self.n2))
+        elements.append(DielectricInterface(n1=self.n2, n2=1, R=R4, diameter=diameter))
+        super(AirSpacedAchromatDoubletLens, self).__init__(elements=elements, 
+                                                  designFocalLength=f, 
+                                                  wavelengthRef=wavelengthRef,
+                                                  url=url, 
+                                                  label=label)
+        self.apertureDiameter = diameter
+
+        if abs(self.tc1 + self.tc2 - self.L) / self.L > 0.02:
+            msg = "Obtained thickness {0:.4} is not within 2%% of expected {1:.4}".format(self.tc1 + self.tc2, self.L)
+            warnings.warn(msg, ExpertNote)
+
+        # After having built the lens, we confirm that the expected effective
+        # focal length (fa) is actually within 1% of the calculated focal length
+        (f1, f2) = self.focalDistances()
+        if abs((f1 - f) / f) > 0.01:
+            msg = "Doublet {2}: Obtained effective focal length {0:.4} is not within 1% of " \
+                  "expected {1:.4}".format(f1, f, self.label)
+            warnings.warn(msg, ExpertNote)
+        BFL = self.backFocalLength()
+        if abs((BFL - f) / f) > 0.01:
+            msg = "Doublet {2}: Obtained back focal length {0:.4} is not within 1% of " \
+                  "expected {1:.4}".format(BFL, f, self.label)
+            warnings.warn(msg, ExpertNote)
+
+        h = self.largestDiameter / 2.0
+        phi1 = math.asin(h / abs(self.R1))
+        corner1 = self.frontVertex + self.R1 * (1.0 - math.cos(phi1))
+
+#        phi3 = math.asin(h / abs(self.R3))
+#        corner3 = self.backVertex + self.R3 * (1.0 - math.cos(phi3))
+#        if abs(((corner3 - corner1) / self.te) - 1.0) > 0.05:
+#            msg = "Doublet {2}: obtained thickness {0:.1f} does not match expected " \
+#                  "{1:0.1f}".format(corner3 - corner1, self.te, self.label)
+#            warnings.warn(msg, ExpertNote)
+
+    @property
+    def forwardSurfaces(self) -> List[Interface]:
+        return [SphericalInterface(R=self.R1, L=self.tc1, n=self.n1),
+                SphericalInterface(R=self.R2, L=self.tc2, n=self.n2),
+                SphericalInterface(R=self.R3)]
+
 class AchromatDoubletLens(CompoundLens):
     """ 
     General Achromat doublet lens with an effective focal length of fa, back focal
